@@ -132,7 +132,7 @@ int sys_kexec(void *td, struct sys_kexec_args *uap)
         err = ENOENT;
         goto cleanup;
     }
-
+    kern.printf("[DIAG] Starting GPU initialization\n");
     // Set gpu frequencies and pstate   
     //                      FAT&SLIM / PRO
     if (kern.gpu_devid_is_9924()){
@@ -163,8 +163,15 @@ int sys_kexec(void *td, struct sys_kexec_args *uap)
     kern.set_gpu_freq(7, 673); //673 //673
     kern.update_vddnp(0x12);
 
-    // Copy in kernel image
+   kern.printf("[DIAG] GPU initialization completed\n");
+    
+       // Copy in kernel image
+    kern.printf("[DIAG] Starting kernel allocation: %zu bytes\n",
+                uap->image_size);
+
     image = kernel_alloc_contig(uap->image_size);
+
+    kern.printf("[DIAG] Kernel allocation returned: %p\n", image);
     if (!image) {
         kern.printf("Failed to allocate image\n");
         err = ENOMEM;
