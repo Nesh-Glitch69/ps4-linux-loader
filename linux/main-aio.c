@@ -185,8 +185,9 @@ void evf_close(int);
 void reboot_thread(void *_)
 {
     // Wait a bit and then reboot
-    nanosleep((const struct timespec *)
-              "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", NULL);
+    const struct timespec delay = { .tv_sec = 5, .tv_nsec = 0 };
+    nanosleep(&delay, NULL);
+    
     int evf = evf_open("SceSysCoreReboot");
     evf_cancel(evf, 0x4000, 0);
     evf_close(evf);
