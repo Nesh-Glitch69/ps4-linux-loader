@@ -152,17 +152,36 @@ static int resolve_symbols(void)
 
 void *kernel_alloc_contig(size_t size)
 {
-    // use kmem_alloc_contig instead of contigalloc to avoid messing with a malloc_type...
     vm_offset_t ret = 0;
-    while(!(ret = kern.kmem_alloc_contig(
-                 *kern.kernel_map, size, M_ZERO | M_WAITOK, (vm_paddr_t)0,
-                 ~(vm_paddr_t)0, 1, 0, VM_MEMATTR_DEFAULT)));
+    unsigned int attempts = 0;
 
-    /*if (!ret) {
-        kern.printf("Failed to allocate %zud bytes\n", size);
+    kern.printf("[DIAG] Entering kernel_alloc_contig: %zu bytes\n", size);
+
+    while (attempts < 3) {
+        attempts++;
+
+        kern.printf("[DIAG] Allocation attempt %u starting\n", attempts);
+
+        ret = kern.kmem_alloc_contig(
+            *kern.kernel_map, size, M_ZERO | M_WAITOK, (vm_paddr_t)0,
+            ~(vm_paddr_t)0, 1, 0, VM_MEMATTR_DEFAULT);
+
+        kern.printf("[DIAG] Allocation attempt %u returned: %p\n",
+                    attempts, (void *)ret);
+
+        if (ret)
+            break;
+    }
+
+    if (!ret) {
+        kern.printf("[DIAG] Allocation failed after %u attempts\n", attempts);
         return NULL;
-    }*/
-    return (void *)PA_TO_DM(kern.pmap_extract(kern.kernel_pmap_store, ret));
+    }
+
+    kern.printf("[DIAG] Allocation succeeded; translating address\n");
+
+    return (void *)PA_TO_DM(
+        kern.pmap_extract(kern.kernel_pmap_store, ret));
 }
 
 void kernel_free_contig(void *addr, size_t size)
